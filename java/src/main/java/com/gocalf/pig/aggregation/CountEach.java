@@ -1,8 +1,10 @@
 package com.gocalf.pig.aggregation;
 
+import com.gocalf.pig.Utils;
 import org.apache.pig.Accumulator;
 import org.apache.pig.Algebraic;
 import org.apache.pig.EvalFunc;
+import org.apache.pig.backend.executionengine.ExecException;
 import org.apache.pig.data.DataBag;
 import org.apache.pig.data.DataType;
 import org.apache.pig.data.Tuple;
@@ -21,7 +23,12 @@ public class CountEach extends EvalFunc<Map<String, Long>>
 
     @Override
     public Map<String, Long> exec(Tuple input) throws IOException {
-        return countEach(input);
+        if (input == null || input.size() == 0 || input.get(0) == null) {
+            return null;
+        }
+        Map<String, Long> count = new HashMap<>();
+        countEachInto((DataBag) input.get(0), count);
+        return count.isEmpty() ? null : count;
     }
 
     @Override
@@ -54,7 +61,12 @@ public class CountEach extends EvalFunc<Map<String, Long>>
 
         @Override
         public Tuple exec(Tuple input) throws IOException {
-            return tupleFactory.newTuple(countEach(input));
+            if (input == null || input.size() == 0 || input.get(0) == null) {
+                return tupleFactory.newTuple((Object)null);
+            }
+            Map<String, Long> count = new HashMap<>();
+            countEachInto((DataBag)input.get(0), count);
+            return tupleFactory.newTuple(count.isEmpty() ? null : count);
         }
     }
 
@@ -62,7 +74,12 @@ public class CountEach extends EvalFunc<Map<String, Long>>
 
         @Override
         public Tuple exec(Tuple input) throws IOException {
-            return tupleFactory.newTuple(combine(input));
+            if (input == null || input.size() == 0 || input.get(0) == null) {
+                return tupleFactory.newTuple((Object)null);
+            }
+            Map<String, Long> count = new HashMap<>();
+            sumEachInto((DataBag)input.get(0), count);
+            return tupleFactory.newTuple(count.isEmpty() ? null : count);
         }
     }
 
@@ -70,7 +87,12 @@ public class CountEach extends EvalFunc<Map<String, Long>>
 
         @Override
         public Map<String, Long> exec(Tuple input) throws IOException {
-            return combine(input);
+            if (input == null || input.size() == 0 || input.get(0) == null) {
+                return null;
+            }
+            Map<String, Long> count = new HashMap<>();
+            sumEachInto((DataBag)input.get(0), count);
+            return count.isEmpty() ? null : count;
         }
     }
 
@@ -79,16 +101,13 @@ public class CountEach extends EvalFunc<Map<String, Long>>
     private Map<String, Long> intermediateCount = null;
 
     public void accumulate(Tuple b) throws IOException {
-        Map<String, Long> count = countEach(b);
-        if (count == null) {
+        if (b == null || b.size() == 0 || b.get(0) == null) {
             return;
         }
-
         if (intermediateCount == null) {
-            intermediateCount = new HashMap<String, Long>();
+            intermediateCount = new HashMap<>();
         }
-
-        addEach(count, intermediateCount);
+        countEachInto((DataBag)b.get(0), intermediateCount);
     }
 
     public Map<String, Long> getValue() {
@@ -101,60 +120,33 @@ public class CountEach extends EvalFunc<Map<String, Long>>
 
     // Other
 
-    protected static void addEach(Map<String, Long> from, Map<String, Long> into) {
-        if (from == null) {
-            return;
-        }
-
-        for (String key : from.keySet()) {
-            Long value = from.get(key);
-            if (into.containsKey(key)) {
-                into.put(key, into.get(key) + value);
-            } else {
-                into.put(key, value);
-            }
-        }
-    }
-
-    protected static Map<String, Long> countEach(Tuple input) throws IOException {
-        DataBag values = (DataBag) input.get(0);
-        if (values.size() == 0) {
-            return null;
-        }
-
-        Map<String, Long> count = new HashMap<String, Long>();
-        for (Tuple t : values) {
+    protected static void countEachInto(DataBag dataBag, Map<String, Long> count) throws ExecException {
+        for (Tuple t : dataBag) {
             Object item = t.get(0);
             if (item == null) {
                 continue;
             }
-            String key = item.toString();
-            if (count.containsKey(key)) {
-                count.put(key, count.get(key) + 1L);
-            } else {
-                count.put(key, 1L);
-            }
-        }
 
-        return count.isEmpty() ? null : count;
+            String key = item.toString();
+            count.put(key, Utils.mapGet(count, key, 0L) + 1);
+        }
     }
 
-    protected static Map<String, Long> combine(Tuple input) throws IOException {
-        DataBag values = (DataBag)input.get(0);
-        if (values.size() == 0) {
-            return null;
-        }
-
-        Map<String, Long> count = new HashMap<String, Long>();
-        for (Tuple t : values) {
+    protected static void sumEachInto(DataBag dataBag, Map<String, Long> sum) throws ExecException {
+        for (Tuple t : dataBag) {
             @SuppressWarnings("unchecked")
-            Map<String, Long> map = (Map<String, Long>) (t.get(0));
+            Map<String, Long> map = (Map<String, Long>)t.get(0);
             if (map == null) {
                 continue;
             }
-            addEach(map, count);
-        }
 
-        return count.isEmpty() ? null : count;
+            for (Map.Entry<String, Long> entry : map.entrySet()) {
+                String key = entry.getKey();
+                Long value = entry.getValue();
+                if (value != null) {
+                    sum.put(key, Utils.mapGet(sum, key, 0L) + value);
+                }
+            }
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.gocalf.pig.aggregation;
 
+import com.gocalf.pig.Utils;
 import org.apache.pig.Accumulator;
 import org.apache.pig.Algebraic;
 import org.apache.pig.EvalFunc;
@@ -22,7 +23,12 @@ public class SumEachLong extends EvalFunc<Map<String, Long>>
 
     @Override
     public Map<String, Long> exec(Tuple input) throws IOException {
-        return sumEach(input);
+        if (input == null || input.size() == 0 || input.get(0) == null) {
+            return null;
+        }
+        Map<String, Long> sum = new HashMap<>();
+        sumEachInto((DataBag)input.get(0), sum);
+        return sum.isEmpty() ? null : sum;
     }
 
     @Override
@@ -55,7 +61,12 @@ public class SumEachLong extends EvalFunc<Map<String, Long>>
 
         @Override
         public Tuple exec(Tuple input) throws IOException {
-            return tupleFactory.newTuple(sumEach(input));
+            if (input == null || input.size() == 0 || input.get(0) == null) {
+                return tupleFactory.newTuple((Object)null);
+            }
+            Map<String, Long> sum = new HashMap<>();
+            sumEachInto((DataBag)input.get(0), sum);
+            return tupleFactory.newTuple(sum.isEmpty() ? null : sum);
         }
     }
 
@@ -63,7 +74,12 @@ public class SumEachLong extends EvalFunc<Map<String, Long>>
 
         @Override
         public Tuple exec(Tuple input) throws IOException {
-            return tupleFactory.newTuple(combine(input));
+            if (input == null || input.size() == 0 || input.get(0) == null) {
+                return tupleFactory.newTuple((Object)null);
+            }
+            Map<String, Long> sum = new HashMap<>();
+            sumEachInto((DataBag)input.get(0), sum);
+            return tupleFactory.newTuple(sum.isEmpty() ? null : sum);
         }
     }
 
@@ -71,7 +87,12 @@ public class SumEachLong extends EvalFunc<Map<String, Long>>
 
         @Override
         public Map<String, Long> exec(Tuple input) throws IOException {
-            return combine(input);
+            if (input == null || input.size() == 0 || input.get(0) == null) {
+                return null;
+            }
+            Map<String, Long> sum = new HashMap<>();
+            sumEachInto((DataBag)input.get(0), sum);
+            return sum.isEmpty() ? null : sum;
         }
     }
 
@@ -80,16 +101,13 @@ public class SumEachLong extends EvalFunc<Map<String, Long>>
     private Map<String, Long> intermediateSum = null;
 
     public void accumulate(Tuple b) throws IOException {
-        Map<String, Long> sum = sumEach(b);
-        if (sum == null) {
+        if (b == null || b.size() == 0 || b.get(0) == null) {
             return;
         }
-
         if (intermediateSum == null) {
-            intermediateSum = new HashMap<String, Long>();
+            intermediateSum = new HashMap<>();
         }
-
-        addEach(sum, intermediateSum);
+        sumEachInto((DataBag)b.get(0), intermediateSum);
     }
 
     public Map<String, Long> getValue() {
@@ -102,83 +120,31 @@ public class SumEachLong extends EvalFunc<Map<String, Long>>
 
     // Other
 
-    protected static void addEach(Map<String, Long> from, Map<String, Long> into) {
-        if (from == null) {
-            return;
-        }
-
-        for (String key : from.keySet()) {
-            Long value = from.get(key);
-            if (into.containsKey(key)) {
-                into.put(key, into.get(key) + value);
-            } else {
-                into.put(key, value);
-            }
+    protected static Long convertValue(Object value) {
+        if (value instanceof Long) {
+            return (Long)value;
+        } else if (value instanceof Integer) {
+            return ((Integer)value).longValue();
+        } else {
+            return null;
         }
     }
 
-    protected static Map<String, Long> convert(Object value) throws ExecException {
-        if (value == null) {
-            return null;
-        }
-
-        Map<String, Long> longMap = new HashMap<String, Long>();
-        Map rawMap = (Map) value;
-        for (Object rawKey : rawMap.keySet()) {
-            Object rawValue = rawMap.get(rawKey);
-            if (rawValue == null) {
-                // Ignore NULL value.
-                continue;
-            }
-
-            Long x;
-            if (rawValue instanceof Long) {
-                x = (Long)rawValue;
-            } else if (rawValue instanceof Integer) {
-                x = ((Integer)rawValue).longValue();
-            } else {
-                throw new ExecException("Invalid value type in pig map: " + rawValue.getClass().getName());
-            }
-            longMap.put((String) rawKey, x);
-        }
-
-        return longMap.isEmpty() ? null : longMap;
-    }
-
-    protected static Map<String, Long> sumEach(Tuple input) throws IOException {
-        DataBag values = (DataBag)input.get(0);
-        if (values.size() == 0) {
-            return null;
-        }
-
-        Map<String, Long> sum = new HashMap<String, Long>();
-        for (Tuple t : values) {
-            Map<String, Long> map = convert(t.get(0));
-            if (map == null) {
-                continue;
-            }
-            addEach(map, sum);
-        }
-
-        return sum.isEmpty() ? null : sum;
-    }
-
-    protected static Map<String, Long> combine(Tuple input) throws IOException {
-        DataBag values = (DataBag)input.get(0);
-        if (values.size() == 0) {
-            return null;
-        }
-
-        Map<String, Long> sum = new HashMap<String, Long>();
-        for (Tuple t : values) {
+    protected static void sumEachInto(DataBag dataBag, Map<String, Long> sum) throws ExecException {
+        for (Tuple t : dataBag) {
             @SuppressWarnings("unchecked")
-            Map<String, Long> map = (Map<String, Long>) (t.get(0));
+            Map<String, Object> map = (Map<String, Object>)t.get(0);
             if (map == null) {
                 continue;
             }
-            addEach(map, sum);
-        }
 
-        return sum.isEmpty() ? null : sum;
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                String key = entry.getKey();
+                Long value = convertValue(entry.getValue());
+                if (value != null) {
+                    sum.put(key, Utils.mapGet(sum, key, 0L) + value);
+                }
+            }
+        }
     }
 }

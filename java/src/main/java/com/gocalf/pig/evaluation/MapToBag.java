@@ -20,7 +20,7 @@ public class MapToBag extends EvalFunc<DataBag> {
         }
 
         @SuppressWarnings("unchecked")
-        Map<String, Object> map = (Map<String, Object>) input.get(0);
+        Map<String, Object> map = (Map<String, Object>)input.get(0);
         if (map == null || map.isEmpty()) {
             return null;
         }
@@ -70,7 +70,7 @@ public class MapToBag extends EvalFunc<DataBag> {
 
     @Override
     public List<FuncSpec> getArgToFuncMapping() throws FrontendException {
-        List<FuncSpec> funcList = new ArrayList<FuncSpec>();
+        List<FuncSpec> funcList = new ArrayList<>();
         funcList.add(new FuncSpec(this.getClass().getName(), new Schema(new Schema.FieldSchema(null, DataType.MAP))));
         return funcList;
     }

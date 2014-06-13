@@ -12,7 +12,7 @@ public class SumEach extends SumEachDouble {
 
     @Override
     public List<FuncSpec> getArgToFuncMapping() throws FrontendException {
-        List<FuncSpec> funcList = new ArrayList<FuncSpec>();
+        List<FuncSpec> funcList = new ArrayList<>();
         funcList.add(new FuncSpec(this.getClass().getName(), getBagSchema(DataType.BYTEARRAY)));
         funcList.add(new FuncSpec(SumEachDouble.class.getName(), getBagSchema(DataType.DOUBLE)));
         funcList.add(new FuncSpec(SumEachDouble.class.getName(), getBagSchema(DataType.FLOAT)));
