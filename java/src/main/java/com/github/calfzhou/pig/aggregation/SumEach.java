@@ -1,4 +1,4 @@
-package com.gocalf.pig.aggregation;
+package com.github.calfzhou.pig.aggregation;
 
 import org.apache.pig.FuncSpec;
 import org.apache.pig.data.DataType;

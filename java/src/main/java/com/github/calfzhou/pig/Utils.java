@@ -1,4 +1,4 @@
-package com.gocalf.pig;
+package com.github.calfzhou.pig;
 
 import java.util.Map;
 

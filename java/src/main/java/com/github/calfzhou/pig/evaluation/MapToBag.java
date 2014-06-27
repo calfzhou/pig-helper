@@ -1,4 +1,4 @@
-package com.gocalf.pig.evaluation;
+package com.github.calfzhou.pig.evaluation;
 
 import org.apache.pig.EvalFunc;
 import org.apache.pig.FuncSpec;
