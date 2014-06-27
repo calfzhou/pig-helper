@@ -111,7 +111,7 @@ public class SumEachLong extends EvalFunc<Map<String, Long>>
     }
 
     public Map<String, Long> getValue() {
-        return intermediateSum;
+        return intermediateSum.size() == 0 ? null : intermediateSum;
     }
 
     public void cleanup() {
@@ -141,7 +141,7 @@ public class SumEachLong extends EvalFunc<Map<String, Long>>
             for (Map.Entry<String, Object> entry : map.entrySet()) {
                 String key = entry.getKey();
                 Long value = convertValue(entry.getValue());
-                if (value != null) {
+                if (key != null && value != null) {
                     sum.put(key, Utils.mapGet(sum, key, 0L) + value);
                 }
             }

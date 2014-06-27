@@ -26,11 +26,10 @@ public class MapToBag extends EvalFunc<DataBag> {
         }
 
         DataBag bag = bagFactory.newDefaultBag();
-        for (String key : map.keySet()) {
-            Object value = map.get(key);
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
             Tuple oneKeyTuple = tupleFactory.newTuple(2);
-            oneKeyTuple.set(0, key);
-            oneKeyTuple.set(1, value);
+            oneKeyTuple.set(0, entry.getKey());
+            oneKeyTuple.set(1, entry.getValue());
             bag.add(oneKeyTuple);
         }
 
@@ -78,4 +77,3 @@ public class MapToBag extends EvalFunc<DataBag> {
     private static TupleFactory tupleFactory = TupleFactory.getInstance();
     private static BagFactory bagFactory = BagFactory.getInstance();
 }
-

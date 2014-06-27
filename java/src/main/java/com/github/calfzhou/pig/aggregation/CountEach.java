@@ -111,7 +111,7 @@ public class CountEach extends EvalFunc<Map<String, Long>>
     }
 
     public Map<String, Long> getValue() {
-        return intermediateCount;
+        return intermediateCount.isEmpty() ? null : intermediateCount;
     }
 
     public void cleanup() {
@@ -128,7 +128,7 @@ public class CountEach extends EvalFunc<Map<String, Long>>
             }
 
             String key = item.toString();
-            count.put(key, Utils.mapGet(count, key, 0L) + 1);
+            count.put(key, Utils.mapGet(count, key, 0L) + 1L);
         }
     }
 
