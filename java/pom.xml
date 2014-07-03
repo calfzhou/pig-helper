@@ -72,4 +72,14 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>calfzhou-releases</id>
+            <url>https://github.com/calfzhou/maven-repo/raw/master/releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 </project>
